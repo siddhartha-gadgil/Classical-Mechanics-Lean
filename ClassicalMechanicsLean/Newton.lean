@@ -97,4 +97,13 @@ axiom Second_Law {n : ℕ} (S : System n) :
 axiom Conservation_of_Momentum {n : ℕ} (S : System n) :
   (S.Fext = 0) → (S.p.asFunc = 0)
 
+def half: ℝ :=  (1 / 2: ℚ)
+
+def Particle.Ek (z : Particle) : (ℝ → ℝ) :=
+  fun (t : ℝ) => (z.m)*(((z.v.asFunc ⟨[t], rfl⟩) : ℝ)^2) * half
+
+#eval half 
+
+#check Real.ofCauchy
+
 end Newton1
