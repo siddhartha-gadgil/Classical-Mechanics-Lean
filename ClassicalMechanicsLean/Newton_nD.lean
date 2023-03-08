@@ -1,5 +1,5 @@
 import Mathlib 
-import ClassicalMechanicsLean.JetSpace_nD
+import ClassicalMechanicsLean.Jetspace_nD
 
 
 namespace Newton_nD
