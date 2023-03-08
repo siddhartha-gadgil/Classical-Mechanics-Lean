@@ -1,5 +1,5 @@
 import Mathlib 
-import ClassicalMechanicsLean.JetSpace
+import ClassicalMechanicsLean.JetSpace_1D
 
 
 namespace Newton1
@@ -11,7 +11,7 @@ namespace Newton1
 
 structure Particle where
   m : ℝ 
-  x : Jet.SmoothFunction 1
+  x : Jet.SmoothFunction 1 
   v : Jet.SmoothFunction 1
   --{h : Vector.cons (v.asFunc) Vector.nil = Vector.get x.grad ⟨0, Nat.zero_lt_succ 0⟩}
 
@@ -97,13 +97,17 @@ axiom Second_Law {n : ℕ} (S : System n) :
 axiom Conservation_of_Momentum {n : ℕ} (S : System n) :
   (S.Fext = 0) → (S.p.asFunc = 0)
 
-def half: ℝ :=  (1 / 2: ℚ)
+/-! We define the kinetic energy of a particle
+-/
 
+def half : ℝ := (1/2 : ℚ)
 def Particle.Ek (z : Particle) : (ℝ → ℝ) :=
-  fun (t : ℝ) => (z.m)*(((z.v.asFunc ⟨[t], rfl⟩) : ℝ)^2) * half
+  fun (t : ℝ) => (z.m)*(((z.v.asFunc ⟨[t], rfl⟩) : ℝ)^2)*(half)
 
-#eval half 
+/-! We define the potential energy of a particle
+-/
 
-#check Real.ofCauchy
+
+
 
 end Newton1
