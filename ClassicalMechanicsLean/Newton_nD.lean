@@ -9,34 +9,48 @@ namespace Newton_nD
 /-! Should include hypothesis in the definition of Particle without error.
 -/
 
+local infixl:arg (priority := high) "^" => Vector
+
+/--
+A particle is defined to be a structre with 
+-/
 structure Particle (n : ℕ) where
   m : ℝ 
-  x : Jet.SmoothFunction 1 n 
-  v : Jet.SmoothFunction 1 n
+  x : SmoothFunction 1 n 
+  v : SmoothFunction 1 n
+  F : ℝ^n → ℝ^n 
   --{h : Vector.cons (v.asFunc) Vector.nil = Vector.get x.grad ⟨0, Nat.zero_lt_succ 0⟩}
 
 /-! We then define particle's velocity and acccelaration as given below
 -/
 
-def Particle.a {n : ℕ} (z : Particle n) : (ℝ → ℝ^n) := 
-  fun (t : ℝ) => z.v.grad ⟨[t], rfl⟩ ⟨[t], rfl⟩
+/--
+The acceleration of the particle is defined to be the gradient of the velocity with respect to time.
+It is represented 
+-/
+def Particle.a {n : ℕ} (z : Particle n) : (ℝ → Matrix' n 1 ℝ) := 
+  fun (t : ℝ) => (z.v.grad ⟨[t], rfl⟩)
 
-def Particle.p {n : ℕ} (z : Particle n) : (Jet.SmoothFunction 1 n) := 
+def Particle.p {n : ℕ} (z : Particle n) : (SmoothFunction 1 n) := 
   ⟨fun (t : ℝ^1) => ((z.v.asFunc t).map ((z.m)*·)),
-   fun (t : ℝ^1) =>
-     let result₁ (c : ℝ^1) : ℝ^n := (((z.v.grad t c).map ((z.m)*·)) : ℝ ^ n)
-     result₁
+   fun (t : ℝ^1) => ((z.a (t[0])).map ((z.m)*·)),
+   sorry
   ⟩
 
 structure System (n : ℕ) (m : ℕ) := 
   particles : Vector (Particle n) m
-  Fext : ℝ → ℝ^n 
 
 /-! Sum of mass of particles in a system
 -/
 
 def System.m {n : ℕ} {m : ℕ} (S : System n m) : ℝ :=
   S.particles.map Particle.m |>.toList.sum
+
+/--Fext of a system
+-/
+
+def System.F {n : ℕ} {m : ℕ} (S : System n m) : (ℝ^n → ℝ^n) :=
+  fun (x : ℝ^n) => S.particles.map (fun  z => z.F x) |>.toList.sum
 
 /- Initial attempt to define System.m
 
@@ -56,19 +70,17 @@ def System.m {n : ℕ} {m : ℕ} (S : System n m) : ℝ :=
 /-! Sum of momentum of particles in a system
 -/
 
-def System.p {n : ℕ} {m : ℕ} (S : System n m) : (Jet.SmoothFunction 1 n) :=
+def System.p {n : ℕ} {m : ℕ} (S : System n m) : (SmoothFunction 1 n) :=
   ⟨fun t => S.particles.map (fun z => (z.v.asFunc t).map ((z.m)*·)) |>.toList.sum,
-   fun t => S.particles.map (fun z => 
-   let result₂ (c: ℝ^1) : ℝ^n := ((z.a (t : ℝ)).map ((z.m)*·) : ℝ^n)
-   result₂)
-   |>.toList.sum⟩
+   fun t => S.particles.map (fun z => ((z.a (t[0])).map ((z.m)*·)))|>.toList.sum, sorry⟩
 
 /-! Velocity and accelaration of centre of mass of a system is defined below
 -/
 
-def System.vcom {n : ℕ} {m : ℕ} (S : System n m) : (Jet.SmoothFunction 1 n) := 
-  ⟨fun t => S.particles.map (fun p => p.v.asFunc t) |>.toList.sum, 
-   fun t => S.particles.map (fun p => p.v.grad t) |>.toList.sum⟩ 
+noncomputable def System.vcom {n : ℕ} {m : ℕ} (S : System n m) : (SmoothFunction 1 n) := 
+  ⟨fun t => S.particles.map (fun z => (1/S.m)•(z.v.asFunc t)) |>.toList.sum, 
+   fun t => S.particles.map (fun z => (1/S.m)•(z.v.grad t)) |>.toList.sum,
+   sorry⟩ 
 
 /-! Initial attempt at defining velocity of centre of mass
 
@@ -90,16 +102,16 @@ def System.vcom {n : ℕ} {m : ℕ} (S : System n m) : (Jet.SmoothFunction 1 n) 
   | [] => ⟨0, 0⟩
 -/
 
-def System.acom {n : ℕ} {m : ℕ} (S : System n m) : (ℝ → ℝ^n) :=
-  fun (t : ℝ) => (S.vcom.grad ⟨[t], rfl⟩ ⟨[t], rfl⟩) 
+noncomputable def System.acom {n : ℕ} {m : ℕ} (S : System n m) : (ℝ → Matrix' n 1 ℝ) :=
+  fun t => S.particles.map (fun z => (1/S.m)•(z.v.grad t)) |>.toList.sum
 
 /-! We give two of the most fundmental laws of Newton mechanics
 -/  
-axiom Second_Law {n : ℕ} {m : ℕ} (S : System n m) : 
-  S.Fext = fun (t) => (S.acom t).map (S.m*·)
 
-axiom Conservation_of_Momentum {n : ℕ} {m : ℕ} (S : System n m) :
-  (S.Fext = 0) → (S.p.asFunc = 0)
+structure NewtonianSystem (n : ℕ) (m : ℕ) extends System n m where 
+  Second_Law : (fun (x : ℝ^n) => fun (t : ℝ) => Matrix'.col (toSystem.F x)) = (fun x: ℝ^n => (fun t : ℝ => ((toSystem.m)•(toSystem.acom t))))
+  Conservation_of_Momentum :=  (toSystem.F = 0) → (toSystem.p.grad = 0)
+
 
 /-! We define the kinetic energy of a particle
 -/
