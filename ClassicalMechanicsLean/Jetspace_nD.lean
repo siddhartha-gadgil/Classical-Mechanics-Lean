@@ -60,7 +60,7 @@ def smul {n : ℕ} (c : ℝ) : ℝ ^ n → ℝ ^ n :=
 
 instance : Add (ℝ ^ n) := ⟨Vector.add⟩
 
-instance : smul ℝ (ℝ ^ n) := ⟨Vector.smul⟩
+instance : SMul ℝ (ℝ ^ n) := ⟨Vector.smul⟩
 
 def zero {n : ℕ} : ℝ ^ n := 
 match n with 
@@ -94,25 +94,21 @@ theorem Vector.add_at {n : ℕ} (v₁ v₂ : ℝ ^ n) (i : ℕ) (h : i < n) :
 
 theorem Vector.zero_get {n : ℕ} (i : ℕ) (h : i < n) : 
   (zero : ℝ ^ n).get ⟨i, h⟩ = 0 := by
-  let ⟨l, ineq⟩ := zero
   simp[Vector.zero] 
-  match c:n, i, h, l, ineq with
-  | 0, _, _, _, ineq =>
+  match c:n, i, h with
+  | 0, _, _ =>
     contradiction 
-  | n+1, 0, _, h₁::_, _  =>
+  | k+1, 0, j  =>
     simp [c]
     simp [zero]
-    sorry
-  | n+1, i+1, pf, h₁::t₁, ineq =>
-    have lem : i < n := by
-      simp [c] at pf
-      exact pf
-    simp [zero, Vector.zero, Vector.zero_get, c]
-    have := by
-      simp [Vector.get_eq_get]
-      simp [Vector.get_eq_get] at ineq
-      exact ineq
-    sorry
+  | n+1, i+1, pf =>
+    have zt : (zero : ℝ^ (n + 1)).tail = zero := by
+      rfl
+    let ih := Vector.zero_get i (Nat.lt_of_succ_lt_succ pf)
+    let lm := Vector.get_tail_succ (zero : ℝ^ (n + 1)) ⟨i, Nat.lt_of_succ_lt_succ pf⟩
+    rw [zt] at lm
+    rw [lm] at ih
+    exact ih
 
 
 theorem Vector.neg_get {n : ℕ} (v : ℝ ^ n) (i : ℕ) (h : i < n) : 
